@@ -31,8 +31,43 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
           echo "Deploying to VPS..."
-          ssh $VPS_USER@$VPS_HOST << 'EOF'
+          ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_HOST << EOF
+            set -e
+            echo "Connecting to VPS..."
+            echo "Deploy path: $DEPLOY_PATH"
+
+            # Navigate to deployment directory
+            if [ ! -d "$DEPLOY_PATH" ]; then
+              echo "Error: Deploy path does not exist: $DEPLOY_PATH"
+              exit 1
+            fi
+
             cd $DEPLOY_PATH
+
+            # Check if it's a git repository
+            if [ ! -d ".git" ]; then
+              echo "Error: $DEPLOY_PATH is not a git repository"
+              exit 1
+            fi
+
+            # Configure git safe directory
+            git config --global --add safe.directory $DEPLOY_PATH
+
+            # Show current branch and status
+            echo "Current branch:"
+            git branch
+            echo "Git status before pull:"
+            git status
+
+            # Pull latest changes
+            echo "Pulling latest changes from origin main..."
             git pull origin main
+
+            # Show status after pull
+            echo "Git status after pull:"
+            git status
+
             echo "Deployment completed successfully!"
           EOF
+
+          echo "Deployment finished!"
